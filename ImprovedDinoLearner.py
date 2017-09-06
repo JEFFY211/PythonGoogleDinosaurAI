@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+from scipy.special import expit
 
 class ImprovedLearner():
 	def __init__(self):
@@ -34,6 +35,7 @@ class ImprovedLearner():
 			0,
 			0,
 			0,
+			'''
 			0,
 			0,
 			0,
@@ -44,6 +46,7 @@ class ImprovedLearner():
 			0,
 			0,
 			0,
+			'''
 		]	
 		self.height = 0
 		self.dist = 0
@@ -52,41 +55,95 @@ class ImprovedLearner():
 		self.fitness = 0
 	@property
 	def hd_node(self):
-		return (self.values[0] * self.height + self.values[1]) + (self.values[2] * self.dist + self.values[3])
+		'''
+		if(((self.values[0] * self.height) + (self.values[1] * self.dist) + self.values[2]) > 0):
+			return 1
+		else:
+			return 0#
+		'''
+		return expit((self.values[0] * self.height) + (self.values[1] * self.dist) + self.values[2])
 	@property
 	def hd2_node(self):
-		return (self.values[4] * self.height + self.values[5]) + (self.values[6] * self.dist + self.values[7])
+		'''
+		if(((self.values[3] * self.height) + (self.values[4] * self.dist) + self.values[5]) > 0):
+			return 1
+		else:
+			return 0#
+		'''
+		return expit((self.values[3] * self.height) + (self.values[4] * self.dist) + self.values[5])
 
 	@property
 	def hidden_node1(self):
-		return (self.values[8] * self.hd_node + self.values[9]) + (self.values[10] * self.hd2_node + self.values[11])
+		'''
+		if(((self.values[6] * self.hd_node) + (self.values[7] * self.hd2_node) + self.values[8]) > 0):
+			return 1
+		else:
+			return 0#
+		'''
+		return expit((self.values[6] * self.hd_node) + (self.values[7] * self.hd2_node) + self.values[8])
 	
 	@property
 	def hidden_node2(self):
-		return (self.values[12] * self.hd_node + self.values[13]) + (self.values[14] * self.hd2_node + self.values[15])
+		'''
+		if(((self.values[9] * self.hd_node) + (self.values[10] * self.hd2_node) + self.values[11]) > 0):
+			return 1
+		else:
+			return 0#
+		'''
+		return expit((self.values[9] * self.hd_node) + (self.values[10] * self.hd2_node) + self.values[11])
 
 	@property
 	def hidden1_node1(self):
-		return (self.values[16] * self.hidden_node1 + self.values[17]) + (self.values[18] * self.hidden_node2 + self.values[19])
+		'''
+		if(((self.values[12] * self.hidden_node1) + (self.values[13] * self.hidden_node2) + self.values[14]) > 0):
+			return 1
+		else:
+			return 0#
+		'''
+		return expit((self.values[12] * self.hidden_node1) + (self.values[13] * self.hidden_node2) + self.values[14])
 
 	@property
 	def hidden1_node2(self):
-		return (self.values[20] * self.hidden_node1 + self.values[21]) + (self.values[22] * self.hidden_node2 + self.values[23])
+		'''
+		if(((self.values[15] * self.hidden_node1) + (self.values[16] * self.hidden_node2) + self.values[17]) > 0):
+			return 1
+		else:
+			return 0#
+		'''
+		return expit((self.values[15] * self.hidden_node1) + (self.values[16] * self.hidden_node2) + self.values[17])
 	
 	@property
 	def output_no_land(self):
-		return (self.values[24] * self.no_land + self.values[25])
+		'''
+		if(((self.values[18] * self.no_land) + self.values[19]) > 0):
+			return 1
+		else:
+			return 0#
+		'''
+		return expit(self.values[18] * self.no_land + self.values[19])
 
 	@property
 	def output_node1(self):
-		return (self.values[26] * self.hidden1_node1 + self.values[27]) + (self.values[28] * self.hidden1_node2 + self.values[29])
+		'''
+		if(((self.values[20] * self.hidden1_node1) + (self.values[21] * self.hidden1_node2) + self.values[22]) > 0):
+			return 1
+		else:
+			return 0#
+		'''
+		return expit((self.values[20] * self.hidden1_node1) + (self.values[21] * self.hidden1_node2) + self.values[22])
 
 	@property
 	def output_node2(self):
-		return (self.values[30] * self.hidden1_node1 + self.values[31]) + (self.values[32] * self.hidden1_node2 + self.values[33])
+		'''
+		if((((self.values[23] * self.hidden1_node1) + (self.values[24] * self.hidden1_node2) + self.values[25])) > 0):
+			return 1
+		else:
+			return 0#
+		'''
+		return expit((self.values[23] * self.hidden1_node1) + (self.values[24] * self.hidden1_node2) + self.values[25])
 	@property
 	def outputValue(self):
-		return (self.values[34] * self.output_node1 + self.values[35]) + (self.values[36] * self.output_node2 + self.values[37]) + (self.values[38] * self.output_no_land + self.values[39])
+		return expit((self.values[26] * self.output_node1) + (self.values[27] * self.output_node2) + (self.values[28] * self.output_no_land) + self.values[29])
 		
 	def output(self, distance, height, no_land_obs):
 		self.height = height
@@ -106,7 +163,7 @@ def mutate(learner1):
 	for i in range(0, len(learner1.values)):
 		tmp = np.random.rand()
 		'''
-		if(tmp < 0.2):
+		if(tmp < 0.4):
 			tmpLearner.values[i] = learner1.values[i]  * (np.random.rand() - 0.5) * 3 + (np.random.rand() - 0.5)
 		'''
 		if(tmp > 0.8):
@@ -121,6 +178,6 @@ def cross_over(learner1, learner2):
 	tmpLearner = clone(learner1)
 	for i in range(0, len(learner1.values)):
 		tmp = np.random.rand()
-		if(tmp > 0.8):
+		if(tmp > 0.5):
 			tmpLearner.values[i] = copy.copy(learner2.values[i])
 	return tmpLearner

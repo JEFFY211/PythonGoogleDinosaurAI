@@ -17,28 +17,40 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 import ImprovedDinoLearner
 from multiprocessing.dummy import Pool as ThreadPool
+import multiprocessing
 import Queue
 import csv
 import sys
+import matplotlib
+import matplotlib.pyplot as plt
+matplotlib.use('TkAgg')
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from Tkinter import *
+
+window = Tk()
 
 f = open('dinosaurLog.csv', 'wt')
 learner_q = Queue.Queue()
 tested_q = Queue.Queue()
+graph_q = multiprocessing.Queue()
+
+
+
 display = Display(visible=1, size=(3840, 2160))
 display.start()
 
-dinosPerGeneration = 256
+dinosPerGeneration = 64
 eliteDinos = 8 
-tournaments = 256/8
+tournaments = 64/8
 truncatedSelection = False
 tournamentSelection = True
 def learning_func(position):
 	profile = webdriver.FirefoxProfile()
 	profile.set_preference('webdriver.load.strategy', 'unstable')
+	learning = True
 	if(position == 0):
 		writer = csv.writer(f)
 		#writer.writerow(('Generation', 'Fitness'))
-		learning = True
 		generation = 0
 		for i in range(0, dinosPerGeneration - 1):
 			neural = ImprovedDinoLearner.ImprovedLearner()
@@ -52,7 +64,7 @@ def learning_func(position):
 			i = 0
 			fitnessTotal = 0
 			highestFitness = 0
-			print("Generation: " + str(generation))
+			print("Generation: " + str(generation + 1))
 			while(not tested_q.empty()):
 				genome.append(tested_q.get())
 				tested_q.task_done()
@@ -63,7 +75,8 @@ def learning_func(position):
 				i = i + 1
 				time.sleep(.1) 
 			print("HighestFitness: " + str(highestFitness))
-			writer.writerow((generation, fitnessTotal, highestFitness))
+			writer.writerow((generation + 1, fitnessTotal, highestFitness))
+			graph_q.put((generation + 1, highestFitness, fitnessTotal / dinosPerGeneration))
 			i = 0
 			if(truncatedSelection and not tournamentSelection):
 				print("TRUNCATED SELECTION")
@@ -383,15 +396,17 @@ def learning_func(position):
 						if(h > 60 and h < 65 and w > 65 and w < 75):
 							time.sleep(1.0)
 							gameOver = True
-							lastFirstObjectPos = 1500
+							lastFirstObjectPos = 2700
 							firstObjectPos = 1500
 							timeRun = time.time() - startTime
+							'''
 							if(jumped):
 								jumped = False
 								timeRun = timeRun + 1 - (jumps / 3)
 							if(ducked):
 								ducked = False
 								timeRun = timeRun + 1
+							'''
 							dino.fitness = timeRun
 							learner_q.task_done()
 							tested_q.put(dino)
@@ -415,10 +430,10 @@ def learning_func(position):
 					#if(outputValue < 3000):
 					#	device.emit_click(uinput.KEY_DOWN)
 					#else:
-					if(outputValue > 500):
+					if(outputValue > 0.65):
 						#device.emit_click(uinput.KEY_UP)	
 						browser.find_element_by_tag_name("body").send_keys(Keys.UP)
-						time.sleep(0.6)
+						time.sleep(0.1)
 						jumps = jumps + 1
 						if(firstObjectPos > 0):
 							jumped = True
@@ -432,10 +447,57 @@ def learning_func(position):
 					#print("CactiJumped:" + str(cactiJumped))
 					#print("NN:" + str(neural) + "," + str(generation))
 					#print("---------")
-				firstObjectPos = -2700
-pool = ThreadPool(5)
-results = pool.map(learning_func, [0,1,2,3,4,5,6,7,8])
+				firstObjectPos = 2700
+def main_func():
+	tpool = ThreadPool(5)
+	results = tpool.map(learning_func, [0,1,2,3,4,5,6,7,8])
+def plot():    #Function to create the base plot, make sure to make global the lines, axes, canvas and any part that you would want to update later
 
+    global line,ax,canvas
+    global y_val
+    global x_val
+    global aver_val
+    y_val = []
+    x_val = []
+    aver_val = []
+    fig = matplotlib.figure.Figure()
+    ax = fig.add_subplot(1,1,1)
+    canvas = FigureCanvasTkAgg(fig, master=window)
+    canvas.show()
+    canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=1)
+    canvas._tkcanvas.pack(side=TOP, fill=BOTH, expand=1)
+    line, = ax.plot([1,2,3], [1,2,10])
+
+
+
+
+def updateplot(q):
+    try:       #Try to check if there is data in the queue
+        result=graph_q.get_nowait()
+
+        if result !='Q':
+                 #here get crazy with the plotting, you have access to all the global variables that you defined in the plot function, and have the data that the simulation sent.
+	     x_val.append(result[0])
+	     y_val.append(result[1])
+	     aver_val.append(result[2])
+	     line, = ax.plot(x_val, y_val)
+	     line1, = ax.plot(x_val, aver_val)
+             #line.set_ydata([1,result,10])
+             ax.draw_artist(line)
+	     ax.draw_artist(line1)
+             canvas.draw()
+             window.after(500,updateplot,q)
+	else:
+		print(result)
+    except:
+        window.after(500,updateplot,q)
+
+training = multiprocessing.Process(None, main_func)
+training.start()
+
+plot()
+updateplot(graph_q)
+window.mainloop()
 print("THIS SHOULDN'T RUN")
 display = Display(visible=1, size=(3840, 2160))
 display.start()
