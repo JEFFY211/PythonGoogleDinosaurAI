@@ -41,8 +41,8 @@ display.start()
 
 dinosPerGeneration = 64
 eliteDinos = 8 
-tournaments = 64/8
-truncatedSelection = False
+tournaments = 4
+truncatedSelection = False 
 tournamentSelection = True
 def learning_func(position):
 	profile = webdriver.FirefoxProfile()
@@ -115,11 +115,13 @@ def learning_func(position):
 				fitness = []
 				for j in range(0, tournaments):
 					print("STARTING TOURNAMENT")
+					'''
 					while(len(tournamentFitness[j]) > 2):
 						mostFit = heapq.nlargest(2, tournamentFitness[j])
 						mostFitIndex1 = np.where(tournamentFitness[j] == mostFit[0])
 						mostFitIndex2 = np.where(tournamentFitness[j] == mostFit[1])
 						if(i is not mostFitIndex1[0][0] and i is not mostFitIndex2[0][0]):
+							print(i, mostFitIndex1[0][0], mostFitIndex2[0][0], mostFit[0], mostFit[1])
 							tournamentFitness[j] = np.delete(tournamentFitness[j], [i])
 							tournament[j] = np.delete(tournament[j], [i])
 							i = 0
@@ -129,39 +131,43 @@ def learning_func(position):
 								i = 0
 							else:
 								i = i + 1
+					'''
+					tempFitness = np.sort(tournamentFitness[j], axis=None)
+					tempFitness = tempFitness[-2:]
+					index2 = np.where(tournamentFitness[j] == tempFitness[0])
+					index1 = np.where(tournamentFitness[j] == tempFitness[1])
+					genome.append(tournament[j][index1[0][0]])
+					genome.append(tournament[j][index2[0][0]])
+					fitness.append(tempFitness[1])
+					fitness.append(tempFitness[0])
+					print(index1[0][0], index2[0][0], tempFitness[1], tempFitness[0], tournamentFitness[j][index1[0][0]])
+					'''
 					genome.extend(tournament[j].tolist())
 					fitness.extend(tournamentFitness[j].tolist())
+					'''
 			else:
 				print("FATAL ERROR: CANNOT TOURNAMENT AND TRUNCATE!")
 				break;
 			newGenome = []
 			opStart = time.time()
 			for i in range(0, len(genome)):
+				print(genome[i].fitness)
 				newGenome.append(ImprovedDinoLearner.clone(genome[i]))
 			#print("Time taken: " + str(time.time() - opStart))
 			opStart = time.time()
-			while(len(genome) < dinosPerGeneration * 0.4):
+			while(len(genome) < dinosPerGeneration * 0.2):
 				genA = random.choice(newGenome)
 				genB = random.choice(newGenome)
 				crossed = ImprovedDinoLearner.cross_over(genA, genB)
 				genome.append(crossed)
 			#print("Time taken: " + str(time.time() - opStart))
-			newGenome = []
-			for i in range(0, len(genome)):
-				newGenome.append(ImprovedDinoLearner.clone(genome[i]))
-			#print("Time taken: " + str(time.time() - opStart))
 			opStart = time.time()
-			while(len(genome) < dinosPerGeneration * 0.66):
+			while(len(genome) < dinosPerGeneration * 0.6):
 				genA = random.choice(newGenome)
 				genB = random.choice(newGenome)
 				crossed = ImprovedDinoLearner.cross_over(genA, genB)
 				mutated = ImprovedDinoLearner.mutate(crossed)
 				genome.append(mutated)
-			opStart = time.time()
-			newGenome = []
-			for i in range(0, len(genome)):
-				newGenome.append(ImprovedDinoLearner.clone(genome[i]))
-			#print("Time taken: " + str(time.time() - opStart))
 			opStart = time.time()
 			while(len(genome) < dinosPerGeneration * (5/6)):
 				genA = random.choice(newGenome)
@@ -171,7 +177,6 @@ def learning_func(position):
 				genome.append(mutated)
 				genome.append(mutated1)
 			#print("Time taken: " + str(time.time() - opStart))
-			opStart = time.time()
 			while(len(genome) < dinosPerGeneration):
 				newBlood = ImprovedDinoLearner.ImprovedLearner()
 				newBlood.randomize()
@@ -186,7 +191,8 @@ def learning_func(position):
 		browser.set_page_load_timeout(15)
 		browser.set_window_size(1300, 400)
 		#browser.get('file:///home/usaid/Downloads/t-rex-runner/index.html')
-		browser.get('http://wayou.github.io/t-rex-runner/')
+		#browser.get('http://wayou.github.io/t-rex-runner/')
+		browser.get('http://usaidpro.github.io/dino/')
 		#browser.execute_script("document.body.style.MozTransform = 'scale(3)';")
 		browser.execute_script("cont = document.getElementById('main-frame-error'); cont.style.transform='scale(2.1)'; cont.style.top = '300px'")
 		
@@ -198,7 +204,8 @@ def learning_func(position):
 		browser.set_page_load_timeout(15)
 		browser.set_window_size(1300, 400)
 		#browser.get('file:///home/usaid/Downloads/t-rex-runner/index.html')
-		browser.get('http://wayou.github.io/t-rex-runner/')
+		#browser.get('http://wayou.github.io/t-rex-runner/')
+		browser.get('http://usaidpro.github.io/dino/')
 		#browser.execute_script("document.body.style.MozTransform = 'scale(3)';")
 		browser.execute_script("cont = document.getElementById('main-frame-error'); cont.style.transform='scale(2.1)'; cont.style.top = '300px'")
 		
@@ -211,7 +218,8 @@ def learning_func(position):
 		browser.set_page_load_timeout(15)
 		browser.set_window_size(1300, 400)
 		#browser.get('file:///home/usaid/Downloads/t-rex-runner/index.html')
-		browser.get('http://wayou.github.io/t-rex-runner/')
+		#browser.get('http://wayou.github.io/t-rex-runner/')
+		browser.get('http://usaidpro.github.io/dino/')
 		#browser.execute_script("document.body.style.MozTransform = 'scale(3)';")
 		browser.execute_script("cont = document.getElementById('main-frame-error'); cont.style.transform='scale(2.1)'; cont.style.top = '300px'")
 		
@@ -224,7 +232,8 @@ def learning_func(position):
 		browser.set_page_load_timeout(15)
 		browser.set_window_size(1300, 400)
 		#browser.get('file:///home/usaid/Downloads/t-rex-runner/index.html')
-		browser.get('http://wayou.github.io/t-rex-runner/')
+		#browser.get('http://wayou.github.io/t-rex-runner/')
+		browser.get('http://usaidpro.github.io/dino/')
 		#browser.execute_script("document.body.style.MozTransform = 'scale(3)';")
 		browser.execute_script("cont = document.getElementById('main-frame-error'); cont.style.transform='scale(2.1)'; cont.style.top = '300px'")
 		
@@ -237,7 +246,8 @@ def learning_func(position):
 		browser.set_page_load_timeout(15)
 		browser.set_window_size(1300, 400)
 		#browser.get('file:///home/usaid/Downloads/t-rex-runner/index.html')
-		browser.get('http://wayou.github.io/t-rex-runner/')
+		#browser.get('http://wayou.github.io/t-rex-runner/')
+		browser.get('http://usaidpro.github.io/dino/')
 		#browser.execute_script("document.body.style.MozTransform = 'scale(3)';")
 		browser.execute_script("cont = document.getElementById('main-frame-error'); cont.style.transform='scale(2.1)'; cont.style.top = '300px'")
 		
@@ -250,7 +260,8 @@ def learning_func(position):
 		browser.set_page_load_timeout(15)
 		browser.set_window_size(1300, 400)
 		#browser.get('file:///home/usaid/Downloads/t-rex-runner/index.html')
-		browser.get('http://wayou.github.io/t-rex-runner/')
+		#browser.get('http://wayou.github.io/t-rex-runner/')
+		browser.get('http://usaidpro.github.io/dino/')
 		#browser.execute_script("document.body.style.MozTransform = 'scale(3)';")
 		browser.execute_script("cont = document.getElementById('main-frame-error'); cont.style.transform='scale(2.1)'; cont.style.top = '300px'")
 		
@@ -263,7 +274,8 @@ def learning_func(position):
 		browser.set_page_load_timeout(15)
 		browser.set_window_size(1300, 400)
 		#browser.get('file:///home/usaid/Downloads/t-rex-runner/index.html')
-		browser.get('http://wayou.github.io/t-rex-runner/')
+		#browser.get('http://wayou.github.io/t-rex-runner/')
+		browser.get('http://usaidpro.github.io/dino/')
 		#browser.execute_script("document.body.style.MozTransform = 'scale(3)';")
 		browser.execute_script("cont = document.getElementById('main-frame-error'); cont.style.transform='scale(2.1)'; cont.style.top = '300px'")
 		
@@ -276,18 +288,19 @@ def learning_func(position):
 		browser.set_page_load_timeout(15)
 		browser.set_window_size(1300, 400)
 		#browser.get('file:///home/usaid/Downloads/t-rex-runner/index.html')
-		browser.get('http://wayou.github.io/t-rex-runner/')
+		#browser.get('http://wayou.github.io/t-rex-runner/')
+		browser.get('http://usaidpro.github.io/dino/')
 		#browser.execute_script("document.body.style.MozTransform = 'scale(3)';")
 		browser.execute_script("cont = document.getElementById('main-frame-error'); cont.style.transform='scale(2.1)'; cont.style.top = '300px'")
-		
 		#mon = {'top':50, 'left':0, 'width':3840, 'height':360}
 		mon = {'top':1400, 'left':1300, 'width':1275, 'height':360}
 		sct = mss()	
-	with uinput.Device([uinput.KEY_SPACE, uinput.KEY_UP, uinput.KEY_DOWN]) as device, tf.Session() as sess:
+	with uinput.Device([uinput.KEY_SPACE, uinput.KEY_UP, uinput.KEY_DOWN]) as device:
 		print("Starting ML program")
 		prevGameOver = False
 		printed = False	
 		browser.find_element_by_tag_name("body").send_keys(Keys.UP)
+		ducking = False
 		while not prevGameOver:
 			frame = np.array(sct.grab(mon))
 			#cv2.imshow("frame", frame)
@@ -308,6 +321,9 @@ def learning_func(position):
 						print("Game Over verified - Starting Game")
 						time.sleep(1.0)
 						prevGameOver = True
+				if(area > 2000 and position == 3):
+					x, y, w, h = cv2.boundingRect(i)
+					print(x, w, (x + w/2))
 		success = False
 		while not success:
 			startTime = 0
@@ -371,7 +387,7 @@ def learning_func(position):
 						x, y, w, h = cv2.boundingRect(i)
 						#if(h > 80):
 						if(h > 65 and h < 70):
-							if(abs(firstObjectPos) > (x + (w / 2)) ):
+							if(abs(firstObjectPos) > (x + (w / 2)) and (x + (w/2)) > 125):
 								firstObjectPos = (x + (w / 2))
 								firstObjectHeight = h
 								noLandObs = 0
@@ -387,7 +403,7 @@ def learning_func(position):
 							#cv2.rectangle(thresh, (x, y), (x+w, y+h), (155, 0, 0), 5)
 						'''
 						if(h > 93 and h < 98):
-							if(abs(firstObjectPos) > (x + (w / 2))):
+							if(abs(firstObjectPos) > (x + (w / 2)) and (x + (w / 2)) > 125):
 								firstObjectPos = (x + (w / 2))
 								firstObjectHeight = h
 								noLandObs = 0
@@ -396,17 +412,15 @@ def learning_func(position):
 						if(h > 60 and h < 65 and w > 65 and w < 75):
 							time.sleep(1.0)
 							gameOver = True
-							lastFirstObjectPos = 2700
-							firstObjectPos = 1500
+							lastFirstObjectPos = 1300
+							firstObjectPos = 1300
 							timeRun = time.time() - startTime
-							'''
 							if(jumped):
 								jumped = False
-								timeRun = timeRun + 1 - (jumps / 3)
+								timeRun = timeRun + 1 - (jumps / 6)
 							if(ducked):
 								ducked = False
 								timeRun = timeRun + 1
-							'''
 							dino.fitness = timeRun
 							learner_q.task_done()
 							tested_q.put(dino)
@@ -430,13 +444,24 @@ def learning_func(position):
 					#if(outputValue < 3000):
 					#	device.emit_click(uinput.KEY_DOWN)
 					#else:
-					if(outputValue > 0.65):
+					if(outputValue < 0.45 and not ducking):
+						browser.find_element_by_tag_name("body").send_keys(Keys.SPACE)
+						ducking = True
+						time.sleep(0.05)
+					else:
+						if(ducking):
+							browser.find_element_by_tag_name("body").send_keys(Keys.RETURN)
+							ducking = False
+					if(outputValue > 0.55):
 						#device.emit_click(uinput.KEY_UP)	
+						#browser.find_element_by_tag_name("body").send_keys(Keys.RETURN)
 						browser.find_element_by_tag_name("body").send_keys(Keys.UP)
-						time.sleep(0.1)
+						time.sleep(0.55)
 						jumps = jumps + 1
+						'''
 						if(firstObjectPos > 0):
 							jumped = True
+						'''
 					'''
 					elif(outputValue < 1000):
 						browser.find_element_by_tag_name("body").send_keys(Keys.DOWN)
@@ -447,7 +472,7 @@ def learning_func(position):
 					#print("CactiJumped:" + str(cactiJumped))
 					#print("NN:" + str(neural) + "," + str(generation))
 					#print("---------")
-				firstObjectPos = 2700
+				firstObjectPos = 1300
 def main_func():
 	tpool = ThreadPool(5)
 	results = tpool.map(learning_func, [0,1,2,3,4,5,6,7,8])

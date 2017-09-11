@@ -162,7 +162,6 @@ def mutate(learner1):
 	tmpLearner = clone(learner1)
 	for i in range(0, len(learner1.values)):
 		tmp = np.random.rand()
-		'''
 		if(tmp < 0.4):
 			tmpLearner.values[i] = learner1.values[i]  * (np.random.rand() - 0.5) * 3 + (np.random.rand() - 0.5)
 		'''
@@ -172,6 +171,7 @@ def mutate(learner1):
 		elif(tmp < 0.2):
 			tmpLearner.values[i] = learner1.values[i] * (-1 * (np.random.rand()/2) - 0.75)
 			#print(learner1.values[i] * (-1 * np.random.rand() - 0.5))
+		'''
 	return tmpLearner
 
 def cross_over(learner1, learner2):
