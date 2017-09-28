@@ -48,23 +48,40 @@ def learning_func(position):
 	profile = webdriver.FirefoxProfile()
 	profile.set_preference('webdriver.load.strategy', 'unstable')
 	learning = True
+	generationsInWindow = 0
 	if(position == 0):
 		writer = csv.writer(f)
 		#writer.writerow(('Generation', 'Fitness'))
 		generation = 0
+		#neurals = []
+		#neuralTempFitness = []
 		for i in range(0, dinosPerGeneration - 1):
 			neural = ImprovedDinoLearner.ImprovedLearner()
 			neural.randomize()
 			learner_q.put(neural)
+			#neurals.append(neural)
 		while learning:
 			print("waiting for dinos")
-			learner_q.join()
+			'''
+			stopAveraging = False
+			while(not stopAveraging):
+				learner_q.join()
+				for i in range(0, dinosPerGeneration - 1):
+					neurals.append(tested_q.get())
+					tested_q.task_done()
+					
+					learner_q.put(neurals[i])
+					if(neurals[0].fitness2 != 0):
+						stopAveraging = True
+				neurals = []
+			'''
 			genome = []
 			fitness = []
 			i = 0
 			fitnessTotal = 0
 			highestFitness = 0
 			print("Generation: " + str(generation + 1))
+			learner_q.join()
 			while(not tested_q.empty()):
 				genome.append(tested_q.get())
 				tested_q.task_done()
@@ -109,33 +126,22 @@ def learning_func(position):
 							i = i + 1
 			elif(tournamentSelection and not truncatedSelection):
 				print("TOURNAMENT SELECTION")
+				print(fitness)
 				tournament = np.array_split(np.array(genome), tournaments)
 				tournamentFitness = np.array_split(np.array(fitness), tournaments)
 				genome = []
 				fitness = []
 				for j in range(0, tournaments):
 					print("STARTING TOURNAMENT")
-					'''
-					while(len(tournamentFitness[j]) > 2):
-						mostFit = heapq.nlargest(2, tournamentFitness[j])
-						mostFitIndex1 = np.where(tournamentFitness[j] == mostFit[0])
-						mostFitIndex2 = np.where(tournamentFitness[j] == mostFit[1])
-						if(i is not mostFitIndex1[0][0] and i is not mostFitIndex2[0][0]):
-							print(i, mostFitIndex1[0][0], mostFitIndex2[0][0], mostFit[0], mostFit[1])
-							tournamentFitness[j] = np.delete(tournamentFitness[j], [i])
-							tournament[j] = np.delete(tournament[j], [i])
-							i = 0
-						else:
-							if(i == len(genome) - 1):
-								print("RESETTING")
-								i = 0
-							else:
-								i = i + 1
-					'''
 					tempFitness = np.sort(tournamentFitness[j], axis=None)
+					print(tempFitness)
 					tempFitness = tempFitness[-2:]
+					print("Cutted tempFitness")
+					print(tempFitness)
 					index2 = np.where(tournamentFitness[j] == tempFitness[0])
+					print("Created index2")
 					index1 = np.where(tournamentFitness[j] == tempFitness[1])
+					print("Created indexes")
 					genome.append(tournament[j][index1[0][0]])
 					genome.append(tournament[j][index2[0][0]])
 					fitness.append(tempFitness[1])
@@ -183,7 +189,10 @@ def learning_func(position):
 				genome.append(newBlood)
 			random.shuffle(genome)
 			for i in genome:
-				i.fitness = i.fitness * 0.5 #Decay to fitness = lower lucky ones' fitness over time
+				i.fitness1 = 0
+				i.fitness2 = 0
+				i.fitness3 = 0
+				i.fitness = 0 #Decay to fitness = lower lucky ones' fitness over time
 				learner_q.put(i)
 			generation = generation + 1
 	elif(position == 1):
@@ -295,184 +304,210 @@ def learning_func(position):
 		#mon = {'top':50, 'left':0, 'width':3840, 'height':360}
 		mon = {'top':1400, 'left':1300, 'width':1275, 'height':360}
 		sct = mss()	
-	with uinput.Device([uinput.KEY_SPACE, uinput.KEY_UP, uinput.KEY_DOWN]) as device:
-		print("Starting ML program")
-		prevGameOver = False
-		printed = False	
-		browser.find_element_by_tag_name("body").send_keys(Keys.UP)
-		ducking = False
-		while not prevGameOver:
+	#with uinput.Device([uinput.KEY_SPACE, uinput.KEY_UP, uinput.KEY_DOWN]) as device:
+	print("Starting ML program")
+	prevGameOver = False
+	printed = False	
+	browser.find_element_by_tag_name("body").send_keys(Keys.UP)
+	ducking = False
+	while not prevGameOver:
+		frame = np.array(sct.grab(mon))
+		#cv2.imshow("frame", frame)
+		#cv2.waitKey()
+		frameGrey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+		thresh = np.full_like(frameGrey, 0)
+		cv2.inRange(frameGrey, 71, 98, thresh)
+		img, contours, hireachy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+		cv2.drawContours(thresh, contours, -1, (127,255,0), 3)
+		x, y, w, h = 0, 0, 0, 0
+		for i in contours:
+			area = cv2.contourArea(i)
+			if(area > 3000 and area < 4105):
+				x, y, w, h = cv2.boundingRect(i)
+				print(h, w)
+				#if(h > 113 and h < 145 and w > 150 and w < 160):
+				if(h > 60 and h < 65 and w > 65 and w < 75):
+					print("Game Over verified - Starting Game")
+					time.sleep(1.0)
+					prevGameOver = True
+			if(area > 2000 and position == 3):
+				x, y, w, h = cv2.boundingRect(i)
+				print(x, w, (x + w/2))
+	success = False
+	while not success:
+		startTime = 0
+		firstObjectPos = 2700
+		lastFirstObjectPos = 2700
+		firstObjectHeight = 0
+		firstObjectWidth = 0
+		firstObjectSpeed = 0
+		loopStart = 0
+		loopEnd = 0
+		floorHeight = 0 #TODO - Add floor height for birds!
+		gameOver = True
+		jumpedOverCactus = False
+		jumped = False
+		ducked = False
+		jumps = 0
+		while gameOver:
 			frame = np.array(sct.grab(mon))
-			#cv2.imshow("frame", frame)
-			#cv2.waitKey()
 			frameGrey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 			thresh = np.full_like(frameGrey, 0)
 			cv2.inRange(frameGrey, 71, 98, thresh)
 			img, contours, hireachy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-			cv2.drawContours(thresh, contours, -1, (127,255,0), 3)
 			x, y, w, h = 0, 0, 0, 0
 			for i in contours:
 				area = cv2.contourArea(i)
+				#if(area > 20000): #Game Over!
 				if(area > 3000 and area < 4105):
 					x, y, w, h = cv2.boundingRect(i)
-					print(h, w)
 					#if(h > 113 and h < 145 and w > 150 and w < 160):
 					if(h > 60 and h < 65 and w > 65 and w < 75):
-						print("Game Over verified - Starting Game")
-						time.sleep(1.0)
-						prevGameOver = True
-				if(area > 2000 and position == 3):
-					x, y, w, h = cv2.boundingRect(i)
-					print(x, w, (x + w/2))
-		success = False
-		while not success:
-			startTime = 0
-			firstObjectPos = -2700
-			lastFirstObjectPos = 2700
-			firstObjectHeight = 0
-			firstObjectWidth = 0
-			firstObjectSpeed = 0
-			loopStart = 0
-			loopEnd = 0
-			floorHeight = 0 #TODO - Add floor height for birds!
-			gameOver = True
-			jumpedOverCactus = False
-			jumped = False
-			ducked = False
-			jumps = 0
-			while gameOver:
-				frame = np.array(sct.grab(mon))
-				frameGrey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-				thresh = np.full_like(frameGrey, 0)
-				cv2.inRange(frameGrey, 71, 98, thresh)
-				img, contours, hireachy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-				x, y, w, h = 0, 0, 0, 0
-				for i in contours:
-					area = cv2.contourArea(i)
-					#if(area > 20000): #Game Over!
-					if(area > 3000 and area < 4105):
-						x, y, w, h = cv2.boundingRect(i)
-						#if(h > 113 and h < 145 and w > 150 and w < 160):
-						if(h > 60 and h < 65 and w > 65 and w < 75):
-							dino = learner_q.get()
-							#Record initial time and start game
-							browser.find_element_by_tag_name("body").send_keys(Keys.UP)
-							#device.emit_click(uinput.KEY_UP)
-							time.sleep(2.0)
-							startTime = time.time()
-							gameOver = False
-							break
-			
-			cactiJumped = 0
-			jumpTime = 0
-			
-			while not gameOver:
-				lastObjectPos = firstObjectPos
-				noLandObs = 1
-				loopStart = time.time()
-				frame = np.array(sct.grab(mon))
-
-				frameGrey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-				#height, width = frameGrey.shape
-				#frameHalf = frameGrey[(height / 2):(height-(height/8)), (width/6):(width-(width/6))]
-				thresh = np.full_like(frameGrey, 0)
-				cv2.inRange(frameGrey, 71, 98, thresh)
-				img, contours, hireachy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-				#cv2.drawContours(thresh, contours, -1, (127,255,0), 3)
-				x, y, w, h = 0, 0, 0, 0
-				for i in contours:
-					area = cv2.contourArea(i)
-					#if(area > 1200 and area < 4750): #Tiny Cactus
-					if(area > 500 and area < 1000):
-						x, y, w, h = cv2.boundingRect(i)
-						#if(h > 80):
-						if(h > 65 and h < 70):
-							if(abs(firstObjectPos) > (x + (w / 2)) and (x + (w/2)) > 125):
-								firstObjectPos = (x + (w / 2))
-								firstObjectHeight = h
-								noLandObs = 0
-							#cv2.rectangle(thresh, (x, y), (x+w, y+h), (255, 0, 0), 2)
-					#elif(area > 5150 and area < 10100): #Bird or Big Cactus
-					elif(area > 1000 and area < 2000):
-						x, y, w, h, = cv2.boundingRect(i)
-						'''Bird
-						if(h > 200 and h < 217):
-							if(firstObjectPos > (x + (w / 2)) and (x + (w/2) > 600) and h < 600):
-								firstObjectPos = (x + (w / 2))
-								firstObjectHeight = h
-							#cv2.rectangle(thresh, (x, y), (x+w, y+h), (155, 0, 0), 5)
-						'''
-						if(h > 93 and h < 98):
-							if(abs(firstObjectPos) > (x + (w / 2)) and (x + (w / 2)) > 125):
-								firstObjectPos = (x + (w / 2))
-								firstObjectHeight = h
-								noLandObs = 0
-					elif(area > 3000 and area < 4105):
-						x, y, w, h = cv2.boundingRect(i)
-						if(h > 60 and h < 65 and w > 65 and w < 75):
-							time.sleep(1.0)
-							gameOver = True
-							lastFirstObjectPos = 1300
-							firstObjectPos = 1300
-							timeRun = time.time() - startTime
-							if(jumped):
-								jumped = False
-								timeRun = timeRun + 1 - (jumps / 6)
-							if(ducked):
-								ducked = False
-								timeRun = timeRun + 1
-							dino.fitness = timeRun
-							learner_q.task_done()
-							tested_q.put(dino)
-							print("Time lived: " + str(timeRun) + "\tJumps: " + str(jumps))
-							if(timeRun > 60):
-								print("Successful dino!")
-								success = True	
-				#distanceTraveled = lastFirstObjectPos - firstObjectPos
-				#print(distanceTraveled)
-				#timeSpent = time.time() - loopStart 
-				#print("Time spent:" + str(timeSpent))
-				#firstObjectSpeed = (distanceTraveled / timeSpent) / 100
-				#print("Obj Pos:" + str(firstObjectPos)) 
-				#print("Speed:" + str(firstObjectSpeed))
-				#print("Width:" + str(firstObjectWidth))
-				#print("Height:" + str(firstObjectHeight))
-				#print("NoLandObs:" + str(noLandObs))
-				#print(gameOver)
-				if not gameOver:
-					outputValue = dino.output(firstObjectPos, firstObjectHeight, noLandObs)
-					#if(outputValue < 3000):
-					#	device.emit_click(uinput.KEY_DOWN)
-					#else:
-					if(outputValue < 0.45 and not ducking):
-						browser.find_element_by_tag_name("body").send_keys(Keys.SPACE)
-						ducking = True
-						time.sleep(0.05)
-					else:
-						if(ducking):
-							browser.find_element_by_tag_name("body").send_keys(Keys.RETURN)
-							ducking = False
-					if(outputValue > 0.55):
-						#device.emit_click(uinput.KEY_UP)	
-						#browser.find_element_by_tag_name("body").send_keys(Keys.RETURN)
+						dino = learner_q.get()
+						#Record initial time and start game
 						browser.find_element_by_tag_name("body").send_keys(Keys.UP)
-						time.sleep(0.55)
-						jumps = jumps + 1
-						'''
-						if(firstObjectPos > 0):
-							jumped = True
-						'''
+						#device.emit_click(uinput.KEY_UP)
+						time.sleep(2.0)
+						startTime = time.time()
+						gameOver = False
+						break
+		
+		cactiJumped = 0
+		jumpTime = 0
+		
+		while not gameOver:
+			lastObjectPos = firstObjectPos
+			noLandObs = 1
+			loopStart = time.time()
+			frame = np.array(sct.grab(mon))
+
+			frameGrey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+			#height, width = frameGrey.shape
+			#frameHalf = frameGrey[(height / 2):(height-(height/8)), (width/6):(width-(width/6))]
+			thresh = np.full_like(frameGrey, 0)
+			cv2.inRange(frameGrey, 71, 98, thresh)
+			img, contours, hireachy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+			#cv2.drawContours(thresh, contours, -1, (127,255,0), 3)
+			x, y, w, h = 0, 0, 0, 0
+			for i in contours:
+				area = cv2.contourArea(i)
+				#if(area > 1200 and area < 4750): #Tiny Cactus
+				if(area > 500 and area < 1000):
+					x, y, w, h = cv2.boundingRect(i)
+					#if(h > 80):
+					if(h > 65 and h < 70):
+						if(abs(firstObjectPos) > (x + (w / 2)) and (x + (w/2)) > 60):
+							firstObjectPos = (x + (w / 2))
+							firstObjectHeight = h
+							noLandObs = 0
+						#cv2.rectangle(thresh, (x, y), (x+w, y+h), (255, 0, 0), 2)
+				#elif(area > 5150 and area < 10100): #Bird or Big Cactus
+				elif(area > 1000 and area < 2000):
+					x, y, w, h, = cv2.boundingRect(i)
+					'''Bird
+					if(h > 200 and h < 217):
+						if(firstObjectPos > (x + (w / 2)) and (x + (w/2) > 600) and h < 600):
+							firstObjectPos = (x + (w / 2))
+							firstObjectHeight = h
+						#cv2.rectangle(thresh, (x, y), (x+w, y+h), (155, 0, 0), 5)
 					'''
-					elif(outputValue < 1000):
-						browser.find_element_by_tag_name("body").send_keys(Keys.DOWN)
-						time.sleep(0.1)
-						#ducked = True
+					if(h > 93 and h < 98):
+						if(abs(firstObjectPos) > (x + (w / 2)) and (x + (w / 2)) > 60):
+							firstObjectPos = (x + (w / 2))
+							firstObjectHeight = h
+							noLandObs = 0
+				elif(area > 3000 and area < 4105):
+					x, y, w, h = cv2.boundingRect(i)
+					if(h > 60 and h < 65 and w > 65 and w < 75):
+						time.sleep(1.0)
+						gameOver = True
+						lastFirstObjectPos = 1300
+						firstObjectPos = 1300
+						timeRun = time.time() - startTime
+						if(jumped):
+							jumped = False
+							timeRun = timeRun + 1 - (jumps / 6)
+						if(ducked):
+							ducked = False
+							timeRun = timeRun + 1
+						'''
+						if(dino.fitness1 == 0 and dino.fitness2 == 0 and dino.fitness3 == 0):
+							dino.fitness1 = timeRun
+						elif(dino.fitness1 != 0 and dino.fitness2 == 0 and dino.fitness3 == 0):
+							dino.fitness2 = timeRun
+						elif(dino.fitness1 != 0 and dino.fitness2 != 0 and dino.fitness3 == 0):
+							dino.fitness3 = timeRun
+						else:
+							dino.fitness = (dino.fitness1 + dino.fitness2 + dino.fitness3) / 3.0
+						'''
+						dino.fitness = timeRun
+						learner_q.task_done()
+						tested_q.put(dino)
+						print("Time lived: " + str(timeRun) + "\tJumps: " + str(jumps))
+						try:
+							if generationsInWindow % 60 == 0:
+								browser.get('http://usaidpro.github.io/dino/');
+								browser.execute_script("cont = document.getElementById('main-frame-error'); cont.style.transform='scale(2.1)'; cont.style.top = '300px'")
+								time.sleep(2.0)
+								browser.find_element_by_tag_name("body").send_keys(Keys.UP)
+								time.sleep(5.0)
+						except:
+							print("No connection to Internet!")
+						
+						generationsInWindow+=1
+						print(generationsInWindow, position)
+						if(timeRun > 60):
+							print("Successful dino!")
+							success = True	
+			#distanceTraveled = lastFirstObjectPos - firstObjectPos
+			#print(distanceTraveled)
+			#timeSpent = time.time() - loopStart 
+			#print("Time spent:" + str(timeSpent))
+			#firstObjectSpeed = (distanceTraveled / timeSpent) / 100
+			#print("Obj Pos:" + str(firstObjectPos)) 
+			#print("Speed:" + str(firstObjectSpeed))
+			#print("Width:" + str(firstObjectWidth))
+			#print("Height:" + str(firstObjectHeight))
+			#print("NoLandObs:" + str(noLandObs))
+			#print(gameOver)
+			if not gameOver:
+				outputValue = dino.output(firstObjectPos, firstObjectHeight, noLandObs)
+				'''
+				outputValue = 0.5
+				if(firstObjectPos < 350):
+					if(position == 4):
+						print(firstObjectPos)
+					outputValue = 0.56
+				'''
+				if(outputValue < 0.35 and not ducking):
+					browser.find_element_by_tag_name("body").send_keys(Keys.SPACE)
+					ducking = True
+					time.sleep(0.05)
+				else:
+					if(ducking):
+						browser.find_element_by_tag_name("body").send_keys(Keys.RETURN)
+						ducking = False
+				if(outputValue > 0.65):
+					#device.emit_click(uinput.KEY_UP)	
+					#browser.find_element_by_tag_name("body").send_keys(Keys.RETURN)
+					browser.find_element_by_tag_name("body").send_keys(Keys.UP)
+					time.sleep(0.6)
+					jumps = jumps + 1
 					'''
-					#print(outputValue)
-					#print("CactiJumped:" + str(cactiJumped))
-					#print("NN:" + str(neural) + "," + str(generation))
-					#print("---------")
-				firstObjectPos = 1300
+					if(firstObjectPos > 0):
+						jumped = True
+					'''
+				'''
+				elif(outputValue < 1000):
+					browser.find_element_by_tag_name("body").send_keys(Keys.DOWN)
+					time.sleep(0.1)
+					#ducked = True
+				'''
+				#print(outputValue)
+				#print("CactiJumped:" + str(cactiJumped))
+				#print("NN:" + str(neural) + "," + str(generation))
+				#print("---------")
+			firstObjectPos = 1300
 def main_func():
 	tpool = ThreadPool(5)
 	results = tpool.map(learning_func, [0,1,2,3,4,5,6,7,8])
@@ -487,11 +522,17 @@ def plot():    #Function to create the base plot, make sure to make global the l
     aver_val = []
     fig = matplotlib.figure.Figure()
     ax = fig.add_subplot(1,1,1)
+    ax.set_xlabel('Generations', fontsize=30)
+    ax.set_ylabel('Time survived (secs)', fontsize=30)
+    ax.set_title('Dinosaur AI Training', fontsize=50)
+    
     canvas = FigureCanvasTkAgg(fig, master=window)
     canvas.show()
     canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=1)
     canvas._tkcanvas.pack(side=TOP, fill=BOTH, expand=1)
-    line, = ax.plot([1,2,3], [1,2,10])
+    line, = ax.plot([1,2,3], [1,2,10], '-b', label='Longest Surviving Time')
+    line, = ax.plot([0,0,0], [0,2,10], '-g', label='Average Survival Time')
+    ax.legend()
 
 
 
@@ -505,8 +546,8 @@ def updateplot(q):
 	     x_val.append(result[0])
 	     y_val.append(result[1])
 	     aver_val.append(result[2])
-	     line, = ax.plot(x_val, y_val)
-	     line1, = ax.plot(x_val, aver_val)
+	     line, = ax.plot(x_val, y_val, '-b', label='Longest Surviving Time')
+	     line1, = ax.plot(x_val, aver_val, '-g', label='Average Survival Time')
              #line.set_ydata([1,result,10])
              ax.draw_artist(line)
 	     ax.draw_artist(line1)
