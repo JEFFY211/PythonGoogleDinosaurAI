@@ -1,11 +1,12 @@
-import uinput
 from mss import mss
-from PIL import Image
+#from PIL import Image
 import numpy as np
+#Had to change from import Queue - make sure this is right one!
+from multiprocessing.queues import Queue 
 import tensorflow as tf
 import cv2
-from imutils.video import FileVideoStream
-from imutils.video import FPS
+#from imutils.video import FileVideoStream
+#from imutils.video import FPS
 import time
 import heapq
 import copy
@@ -18,14 +19,13 @@ from selenium.webdriver.common.action_chains import ActionChains
 import ImprovedDinoLearner
 from multiprocessing.dummy import Pool as ThreadPool
 import multiprocessing
-import Queue
 import csv
 import sys
 import matplotlib
 import matplotlib.pyplot as plt
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
-from Tkinter import *
+from tkinter import *
 from deap import algorithms, base, creator, tools
 
 window = Tk()
@@ -613,7 +613,9 @@ def evalDino(individual):
 		dinoNum+=1
 	return result
 '''
+generationsRun = 0
 def evaluateOne(individual):
+	global generationsRun
 	ducking = False
 	mon = {'top':50, 'left':0, 'width':1275, 'height':360}
 	sct = mss()
@@ -658,7 +660,7 @@ def evaluateOne(individual):
 	
 	while not gameOver:
 		lastObjectPos = firstObjectPos
-		noLandObs = 1
+		noLandObs = 0
 		loopStart = time.time()
 		frame = np.array(sct.grab(mon))
 
@@ -673,24 +675,35 @@ def evaluateOne(individual):
 				x, y, w, h = cv2.boundingRect(i)
 				if(h > 65 and h < 70):
 					if(abs(firstObjectPos) > (x + (w / 2)) and (x + (w/2)) > 60):
-						firstObjectPos = (x + (w / 2))
+						firstObjectPos = x
+						#firstObjectPos = (x + (w / 2))
 						firstObjectHeight = h
-						noLandObs = 0
+						#firstObjectHeight = y + h
+						noLandObs = -200
 			elif(area > 1000 and area < 2000):
 				x, y, w, h, = cv2.boundingRect(i)
 				#print(h)
 				#Bird
-				if(h < 93 and h > 60):
+				if(h < 90 and h > 60):
+					#255
+					#202
+					#150
 					if(firstObjectPos > (x + (w / 2)) and (x + (w/2)) > 60):
-						firstObjectPos = (x + (w / 2))
+						firstObjectPos = x
+						#firstObjectPos = (x + (w / 2))
 						firstObjectHeight = floor - y
-						print(firstObjectHeight)
+
+						print(x, y, w, h, firstObjectHeight)
+						noLandObs = 200
+						#firstObjectHeight = y + h
 					#cv2.rectangle(thresh, (x, y), (x+w, y+h), (155, 0, 0), 5)
-				if(h > 93 and h < 98):
+				if(h > 90 and h < 98):#93
 					if(abs(firstObjectPos) > (x + (w / 2)) and (x + (w / 2)) > 60):
-						firstObjectPos = (x + (w / 2))
+						#firstObjectPos = (x + (w / 2))
+						firstObjectPos = x
 						firstObjectHeight = h
-						noLandObs = 0
+						#firstObjectHeight = y + h
+						noLandObs = -200
 						floor = y + h
 			elif(area > 3000 and area < 4105):
 				x, y, w, h = cv2.boundingRect(i)
@@ -709,10 +722,8 @@ def evaluateOne(individual):
 					dino.fitness = timeRun
 					print("Time lived: " + str(timeRun) + "\tJumps: " + str(jumps))
 					#queue.put(timeRum)
-					return (timeRun,)
-					'''
 					try:
-						if generationsInWindow % 60 == 0:
+						if generationsRun % 60 == 0:
 							browser.get('http://usaidpro.github.io/dino/');
 							browser.execute_script("cont = document.getElementById('main-frame-error'); cont.style.transform='scale(2.1)'; cont.style.top = '300px'")
 							time.sleep(2.0)
@@ -720,37 +731,42 @@ def evaluateOne(individual):
 							time.sleep(5.0)
 					except:
 						print("No connection to Internet!")
-					generationsInWindow+=1
-					print(generationsInWindow, position)
-					'''
+					generationsRun+=1
+					print(generationsRun)
+					return (timeRun,)
 					if(timeRun > 60):
 						print("Successful dino!")
 		if not gameOver:
 			outputValue = dino.output(firstObjectPos, firstObjectHeight, noLandObs)
-			'''
-			if(outputValue < 0.35 and not ducking):
+			if(outputValue > 650 and not ducking):
 				browser.find_element_by_tag_name("body").send_keys(Keys.SPACE)
 				ducking = True
-				time.sleep(0.05)
+				#time.sleep(0.05)
+			'''
 			else:
-				if(ducking):
+				if(ducking and outputValue > 650):
 					browser.find_element_by_tag_name("body").send_keys(Keys.RETURN)
 					ducking = False
 			'''
-			#print(outputValue)
+			if(ducking and outputValue < 350):
+					browser.find_element_by_tag_name("body").send_keys(Keys.RETURN)
+					ducking = False
+			if(firstObjectHeight > 100):
+				print(outputValue)
 			if(outputValue < 350):
 				#device.emit_click(uinput.KEY_UP)	
 				#browser.find_element_by_tag_name("body").send_keys(Keys.RETURN)
 				browser.find_element_by_tag_name("body").send_keys(Keys.UP)
 				jumped = True
-				time.sleep(0.1)
+				#time.sleep(0.1)
 				#time.sleep(0.6)
 				#jumps = jumps + 1
 		firstObjectPos = 1300
 
 toolbox.register("evaluate", evaluateOne)
 toolbox.register("mate", tools.cxTwoPoint)
-toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
+#toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
+toolbox.register("mutate", tools.mutPolynomialBounded, eta=20, low=-1.0, up=1.0, indpb=0.05)
 toolbox.register("select", tools.selTournament, tournsize=3)
 #toolbox.register("select", tools.selRoulette)
 random.seed(64)
@@ -765,8 +781,32 @@ stats.register("std", np.std)
 stats.register("min", np.min)
 stats.register("max", np.max)
 
-algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=20, stats=stats, halloffame=hof)
+pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=60, stats=stats, halloffame=hof)
+gen = logbook.select("gen")
+mins = logbook.select("min")
+maxs = logbook.select("max")
+avgs = logbook.select("avg")
 
+fig, ax1 = plt.subplots()
+line1 = ax1.plot(gen, maxs, "b-", label="Maximum RunTime")
+ax1.set_xlabel("Generation")
+ax1.set_ylabel("Runtime", color="b")
+for tl in ax1.get_yticklabels():
+    tl.set_color("b")
+
+ax2 = ax1.twinx()
+line2 = ax2.plot(gen, avgs, "r-", label="Average RunTime")
+ax2.set_ylabel("Avg Time", color="r")
+for tl in ax2.get_yticklabels():
+    tl.set_color("r")
+
+lns = line1 + line2
+labs = [l.get_label() for l in lns]
+ax1.legend(lns, labs, loc="bottom right")
+
+plt.show()
+
+'''
 #pool.close()
 def main_func():
 	tpool = ThreadPool(5)
@@ -824,3 +864,4 @@ def updateplot(q):
 plot()
 updateplot(graph_q)
 window.mainloop()
+'''

@@ -317,7 +317,7 @@ def learning_func(position):
 		frameGrey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 		thresh = np.full_like(frameGrey, 0)
 		cv2.inRange(frameGrey, 71, 98, thresh)
-		img, contours, hireachy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+		img, contours, hireachy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 		cv2.drawContours(thresh, contours, -1, (127,255,0), 3)
 		x, y, w, h = 0, 0, 0, 0
 		for i in contours:
