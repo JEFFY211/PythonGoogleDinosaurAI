@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{00efe98c-e2b7-47ad-aa24-6997335145b8}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>dinosaur2.py</StartupFile>
+    <StartupFile>main_dinosaur.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -19,14 +19,19 @@
     <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="dinosaur.py" />
-    <Compile Include="dinosaur2.py" />
+    <Compile Include="main_dinosaur.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="ImprovedDinoLearner.py" />
-    <Compile Include="testExpit.py" />
-    <Compile Include="testSelenium.py" />
+    <Compile Include="module1.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="Global|VisualStudio|ml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="requirements.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
 </Project>

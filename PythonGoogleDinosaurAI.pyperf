@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<ProfilingTarget xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <ProjectTarget>
+    <TargetProject>00efe98c-e2b7-47ad-aa24-6997335145b8</TargetProject>
+    <FriendlyName>PythonGoogleDinosaurAI</FriendlyName>
+  </ProjectTarget>
+  <Reports>
+    <Report>
+      <Filename>C:\Users\usaid\AppData\Local\Temp\PythonGoogleDinosaurAI_20171127.vsp</Filename>
+    </Report>
+  </Reports>
+</ProfilingTarget>
